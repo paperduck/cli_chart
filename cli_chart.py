@@ -5,9 +5,10 @@ from datetime import(
 import math
 
 # config
-chart_width     = 40
+chart_width     = 39
 chart_height    = 10
 chart_bg        = '.'
+label_bg        = ' '
 candle_body     = 'O'
 border_top      = '-'
 border_sides    = '|'
@@ -48,8 +49,6 @@ def show(ts):
     # points per candle (ppc)
     ppc             = math.ceil(len(ts)/chart_width)
     candle_width    = math.floor(chart_width/len(ts))
-    print('ppc = {}'.format(ppc)) # debugging
-    print('candle width = {}'.format(candle_width)) # debugging
     # one sweep to determine min and maxes
     min_price = None
     max_price = None
@@ -60,10 +59,8 @@ def show(ts):
         if not max_price or point[1] > max_price:   max_price = point[1]
         if not start     or point[0] < start:       start     = point[0]
         if not end       or point[0] > end:         end       = point[0]
-    print('{} to {}'.format(min_price, max_price))# debugging
-    print('{}    to    {}'.format(start,end))#debugging
     # aggregate data into candles and add to chart
-    chart = []
+    chart = [[]] # one for the y-labels
     for i in range(0,len(ts)): # for each entry in time series
         price = float(0) # avg of points in current candle
         points_added = 0
@@ -72,22 +69,44 @@ def show(ts):
             points_added += 1
         price   /= ppc # average
         candle  = [chart_bg]*chart_height
-        if   price == min_price:   price_i = chart_height - 1; print(str(price_i))
-        elif price == max_price: price_i = 0; print (0)
+        if   price == min_price:   price_i = chart_height - 1
+        elif price == max_price: price_i = 0
         else:
             price_i = (price - min_price)/(max_price - min_price) # 0 to 1 percentage
             price_i *= chart_height # scale
-            print('float price_i = {}'.format(price_i)) # debugging
             price_i = int(chart_height - price_i)  # flip
-            print('                     int price_i = {}'.format(price_i)) # debugging
         candle[price_i] = candle_body
         for r in range(0,candle_width):
             chart.append(candle)
-    # print
-    for y in range(0, chart_height):
-        for x in range(0, chart_width):
-            #print('{},{}'.format(x,y))# debugging
+            #TODO: didn't I need to shrink points from last candle or something?
+    # y axis labels - one candle at the left
+    y_labels = [label_bg]*chart_height
+    y_labels[0] = str(max_price) + label_bg
+    y_labels[chart_height-1] = str(min_price) + label_bg
+    y_labels_width = max( len(y_labels[0]), len(y_labels[chart_height-1]) )
+    y_labels_width = min(y_labels_width, 10) # hard-coded max
+    for z in range(0, chart_height): # justify labels
+        y_labels[z] = y_labels[z].ljust(y_labels_width)
+        #y_labels[z] = y_labels[z][:y_labels_width-1] # trim
+    chart[0] = y_labels
+    # print main chart
+    for y in range(0, len(chart[0])):
+        for x in range(0, len(chart)):
             print(chart[x][y], end='')
+        print()
+    # x axis labels - make one row for each label,
+    x_labels = []
+
+    row = [label_bg]*y_labels_width + list(str(start))
+    while len(row) < len(chart) + y_labels_width - 1: row += label_bg
+    x_labels.append(row)
+
+    row = str(end).rjust( y_labels_width + len(chart) )
+    x_labels.append(row)
+
+    for row in range(0, len(x_labels)):
+        for col in range(0, len(x_labels[0])):
+            print( x_labels[row][col], end='')
         print()
     """
     y axis = min price to max
