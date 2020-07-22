@@ -40,19 +40,19 @@ def show(ts_unsorted):
     y_min = None
     y_max = None
     for p in ts:
-        if not start or p[0] < start:   start = p[0]
-        if not end   or p[0] > end:     end   = p[0]
-        if not y_min or p[1] < y_min:   y_min = p[1]
-        if not y_max or p[1] > y_max:   y_max = p[1]
+        if start is None or p[0] < start:   start = p[0]
+        if end   is None or p[0] > end:     end   = p[0]
+        if y_min is None or p[1] < y_min:   y_min = p[1]
+        if y_max is None or p[1] > y_max:   y_max = p[1]
     assert start==ts[0][0], end==ts[len(ts)-1][0]
     # plot
     col_i = 0   # current ascii chart column index
     ts_i = 0
     col_span = (end-start)/chart_width
-    print('col_span = {}'.format(col_span))
     chart = []
-    avg = 0
+    avg = float(0)
     num_vals_in_avg = 0
+    print()
     while ts_i < len(ts):
         # if cur date < next threshold
         if ts[ts_i][0] <= ts[0][0] + ((col_i+1) * col_span):
@@ -61,27 +61,14 @@ def show(ts_unsorted):
         else:
             avg /= num_vals_in_avg
             candle = [chart_bg]*chart_height            
-            row_i = float(0) # set type
-            if   avg == y_min:  row_i = 0
-            elif avg == y_max:  row_i = chart_height - 1
+            if   int(avg) == y_min:  row_i = int(0)
+            elif avg == y_max:  row_i = int(chart_height - 1)
             else:
-                row_i = (avg - y_min) / (y_max - y_min)  # percent: 0 to 100
+                row_i = float( (avg - y_min) / (y_max - y_min) )  # percent: 0 to 100
                 row_i *= chart_height  # scale: 0 to chart_height
                 row_i = int(row_i)
                 #row_i = int(chart_height - row_i)  # flip
             candle[row_i] = candle_body
-
-            # debugging: center line
-            #if row_i != 0:
-                #print('row  {}   col  {}'.format(row_i, col_i))
-                #print( '{} = abs({}  -  {})'.format(
-                #float( (col_i+1)/(row_i+1) ) - float(chart_width/chart_height)
-                #,float( (col_i+1)/(row_i+1) )
-                #,float( chart_width/chart_height) 
-            #) )
-            if row_i==0 or abs(float((col_i+1)/(row_i+1)) - float(chart_width/chart_height)) < 0.13:
-                pass#candle[row_i] = 'X'
-
             chart.append(candle)
 
             avg = ts[ts_i][1]
@@ -92,21 +79,20 @@ def show(ts_unsorted):
     avg /= num_vals_in_avg
     candle = [chart_bg]*chart_height            
     row_i = float(0) # set type
-    if   avg == y_min:  row_i = 0; print('S')
-    elif avg == y_max:  row_i = chart_height - 1; print('A')
+    if   avg == y_min:  row_i = 0
+    elif avg == y_max:  row_i = chart_height - 1
     else:
         row_i = (avg - y_min) / (y_max - y_min)  # percent: 0 to 100
         row_i *= chart_height  # scale: 0 to chart_height
         row_i = int(row_i)
     candle[row_i] = candle_body
-    if row_i==0 or abs(float((col_i+1)/(row_i+1)) - float(chart_width/chart_height)) < 0.13:
-        pass#candle[row_i] = 'X'
     chart.append(candle)
     #print
     for y in range(len(chart[0])-1, -1, -1):
         for x in range(0, len(chart)):
             print(chart[x][y], end='')
         print()
+    print()
     return
 
     # validation
