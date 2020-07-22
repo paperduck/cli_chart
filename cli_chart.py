@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 #from copy import deepcopy
 from datetime import(
     datetime
@@ -7,11 +10,11 @@ import math
 # config
 min_chart_width = 10
 min_chart_height = 10
-chart_width     = 50
+chart_width     = 100
 chart_height    = 15
 chart_bg        = '.'
-label_bg        = ' '
-candle_body     = 'o'
+label_bg        = ''
+candle_body     = '─'
 border_top      = '-'
 border_sides    = '|'
 draw_border     = False
@@ -46,47 +49,42 @@ def show(ts_unsorted):
         if y_max is None or p[1] > y_max:   y_max = p[1]
     assert start==ts[0][0], end==ts[len(ts)-1][0]
     # plot
-    col_i = 0   # current ascii chart column index
-    ts_i = 0
-    col_span = (end-start)/chart_width
-    chart = []
-    avg = float(0)
+    col_i           = 0   # current ascii chart column index
+    ts_i            = 0
+    col_span        = (end-start)/chart_width
+    chart           = []
+    avg             = float(0)
     num_vals_in_avg = 0
     print()
-    while ts_i < len(ts):
+    #while ts_i < len(ts):
+    for point in ts:
         # if cur date < next threshold
-        if ts[ts_i][0] <= ts[0][0] + ((col_i+1) * col_span):
-            avg += ts[ts_i][1]
+        if point[0] <= ts[0][0] + ((col_i+1) * col_span):
+            avg += point[1]
             num_vals_in_avg += 1
         else:
+            # filled one ascii col; append to chart
             avg /= num_vals_in_avg
             candle = [chart_bg]*chart_height            
-            if   int(avg) == y_min:  row_i = int(0)
-            elif avg == y_max:  row_i = int(chart_height - 1)
+            if avg == y_min:
+                row_i = int(0); 
+            elif avg == y_max:
+                row_i = int(chart_height - 1)
             else:
                 row_i = float( (avg - y_min) / (y_max - y_min) )  # percent: 0 to 100
                 row_i *= chart_height  # scale: 0 to chart_height
                 row_i = int(row_i)
-                #row_i = int(chart_height - row_i)  # flip
             candle[row_i] = candle_body
             chart.append(candle)
+            
+            print(point[1])
+            print(y_min)
+            print(y_max)
+            print()
 
-            avg = ts[ts_i][1]
+            avg = point[1]
             num_vals_in_avg = 1
             col_i += 1
-        ts_i += 1
-    # last candle
-    avg /= num_vals_in_avg
-    candle = [chart_bg]*chart_height            
-    row_i = float(0) # set type
-    if   avg == y_min:  row_i = 0
-    elif avg == y_max:  row_i = chart_height - 1
-    else:
-        row_i = (avg - y_min) / (y_max - y_min)  # percent: 0 to 100
-        row_i *= chart_height  # scale: 0 to chart_height
-        row_i = int(row_i)
-    candle[row_i] = candle_body
-    chart.append(candle)
     #print
     for y in range(len(chart[0])-1, -1, -1):
         for x in range(0, len(chart)):
