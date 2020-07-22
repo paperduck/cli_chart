@@ -7,22 +7,108 @@ import math
 # config
 min_chart_width = 10
 min_chart_height = 10
-chart_width     = 24
+chart_width     = 50
 chart_height    = 15
 chart_bg        = '.'
 label_bg        = ' '
-candle_body     = 'O'
+candle_body     = 'o'
 border_top      = '-'
 border_sides    = '|'
 draw_border     = False
 
 
-def show(ts):
+def show(ts_unsorted):
     """
     ts (time series) = [ [dt, int],  ]
-    Generate each candle as a vertical slice of the chart, then append them
-    and print.
+    1. sort time series by date
+    2. determine date span per ascii column (end-start)/(num cols)
+    3. for each col, avg points in that span --> this is price for that col
+       NOTE: 
+             for open,  do first
+             for high,  do max
+             for low,   do min 
+             for close, do last
+             for mid,   do avg
+       determine y range from averages, not source points
+       no data in a range --> copy left col
     """
+    # sort
+    ts = sorted(ts_unsorted, key=lambda p: p[0])
+    # range
+    start = None
+    end = None
+    y_min = None
+    y_max = None
+    for p in ts:
+        if not start or p[0] < start:   start = p[0]
+        if not end   or p[0] > end:     end   = p[0]
+        if not y_min or p[1] < y_min:   y_min = p[1]
+        if not y_max or p[1] > y_max:   y_max = p[1]
+    assert start==ts[0][0], end==ts[len(ts)-1][0]
+    # plot
+    col_i = 0   # current ascii chart column index
+    ts_i = 0
+    col_span = (end-start)/chart_width
+    print('col_span = {}'.format(col_span))
+    chart = []
+    avg = 0
+    num_vals_in_avg = 0
+    while ts_i < len(ts):
+        # if cur date < next threshold
+        if ts[ts_i][0] <= ts[0][0] + ((col_i+1) * col_span):
+            avg += ts[ts_i][1]
+            num_vals_in_avg += 1
+        else:
+            avg /= num_vals_in_avg
+            candle = [chart_bg]*chart_height            
+            row_i = float(0) # set type
+            if   avg == y_min:  row_i = 0
+            elif avg == y_max:  row_i = chart_height - 1
+            else:
+                row_i = (avg - y_min) / (y_max - y_min)  # percent: 0 to 100
+                row_i *= chart_height  # scale: 0 to chart_height
+                row_i = int(row_i)
+                #row_i = int(chart_height - row_i)  # flip
+            candle[row_i] = candle_body
+
+            # debugging: center line
+            #if row_i != 0:
+                #print('row  {}   col  {}'.format(row_i, col_i))
+                #print( '{} = abs({}  -  {})'.format(
+                #float( (col_i+1)/(row_i+1) ) - float(chart_width/chart_height)
+                #,float( (col_i+1)/(row_i+1) )
+                #,float( chart_width/chart_height) 
+            #) )
+            if row_i==0 or abs(float((col_i+1)/(row_i+1)) - float(chart_width/chart_height)) < 0.13:
+                pass#candle[row_i] = 'X'
+
+            chart.append(candle)
+
+            avg = ts[ts_i][1]
+            num_vals_in_avg = 1
+            col_i += 1
+        ts_i += 1
+    # last candle
+    avg /= num_vals_in_avg
+    candle = [chart_bg]*chart_height            
+    row_i = float(0) # set type
+    if   avg == y_min:  row_i = 0; print('S')
+    elif avg == y_max:  row_i = chart_height - 1; print('A')
+    else:
+        row_i = (avg - y_min) / (y_max - y_min)  # percent: 0 to 100
+        row_i *= chart_height  # scale: 0 to chart_height
+        row_i = int(row_i)
+    candle[row_i] = candle_body
+    if row_i==0 or abs(float((col_i+1)/(row_i+1)) - float(chart_width/chart_height)) < 0.13:
+        pass#candle[row_i] = 'X'
+    chart.append(candle)
+    #print
+    for y in range(len(chart[0])-1, -1, -1):
+        for x in range(0, len(chart)):
+            print(chart[x][y], end='')
+        print()
+    return
+
     # validation
     if chart_width < min_chart_width:
         print('Chart width must be >= {}'.format(min_chart_width))
@@ -33,27 +119,19 @@ def show(ts):
     # points per candle (ppc)
     ppc             = math.ceil(len(ts)/chart_width)
     print('ppc = {}'.format(ppc))
-    # one sweep to determine min and maxes
-    min_price = None
-    max_price = None
+    # one sweep to determine range
     start     = None
     end       = None
     for point in ts:
-        if not min_price or point[1] < min_price:   min_price = point[1]
-        if not max_price or point[1] > max_price:   max_price = point[1]
         if not start     or point[0] < start:       start     = point[0]
         if not end       or point[0] > end:         end       = point[0]
-    # validation
-    if not min_price: print('failed to find  min price'); return
-    if not max_price: print('failed to find  min price'); return
-    if not start:     print('failed to find  start');     return
-    if not end:       print('failed to find  end');       return
     # aggregate data into candles and add to chart
     chart = []
     datum_i = 0
     for c in range(0, chart_width):
         # (cols > data): Rather than trying to streth candles evenly, just keep the chart small
         # (data > cols): add points to a col until ppc met (compress data)
+        print(datum_i)
         if datum_i < len(ts):
             avg = float( 0 )
             avg += ts[datum_i][1]
@@ -71,30 +149,11 @@ def show(ts):
             val_i = (avg - min_price) / (max_price - min_price)
             val_i *= chart_height
             val_i = int(chart_height - val_i)
-        #print('datum_i:{}     avg:{}      val_i:{}'.format(datum_i, avg, val_i))
         col = [chart_bg]*chart_height
+        print('val_i = {}'.format(val_i))
+        print('                  avg = {}'.format(avg))
         col[val_i] = candle_body 
         chart.append(col)
-    """
-    for i in range(0,len(ts)): # for each entry in time series
-        avg = float(0) # avg of points in current candle
-        points_added = 0
-        while points_added < ppc:
-            avg += ts[i][1]
-            points_added += 1
-        avg   /= ppc # average
-        candle  = [chart_bg]*chart_height
-        if   avg == min_price:   price_i = chart_height - 1
-        elif avg == max_price: price_i = 0
-        else:
-            price_i = (avg - min_price)/(max_price - min_price) # 0 to 1 percentage
-            price_i *= chart_height # scale
-            price_i = int(chart_height - price_i)  # flip
-        candle[price_i] = candle_body
-        for r in range(0,candle_width):
-            chart.append(candle)
-            #TODO: didn't I need to shrink points from last candle or something?
-    """
 
     # y axis labels - one candle at the left
     y_labels = [label_bg]*chart_height
