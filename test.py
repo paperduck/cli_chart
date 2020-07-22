@@ -8,7 +8,7 @@ from    math    import (sin)
 
 time_series = []
 
-step  = 0.04
+step  = 0.001
 i = 0
 n = 100
 curval = 0
