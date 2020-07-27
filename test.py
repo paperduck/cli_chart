@@ -10,9 +10,9 @@ from random import(randrange)
 
 def single():
     time_series = []
-    step  = 0.001
+    step  = 0.05
     i = 0
-    n = 100
+    n = 150
     curval = 0
     point = [datetime.strptime('2020-01-01 13:00', '%Y-%m-%d %H:%M'), [curval]]
     while i < n:
@@ -45,4 +45,4 @@ def ohlc():
 
 
 ohlc()
-
+#single()
