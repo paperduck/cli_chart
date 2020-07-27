@@ -26,7 +26,7 @@ def single():
 def ohlc():
     time_series = []
     i = 1
-    n = 200
+    n = 50
     curval = [10,10,10,10]
     point = [datetime.strptime('2020-12-06 00:00', '%Y-%m-%d %H:%M'), curval]
     while i <= n:
@@ -40,7 +40,7 @@ def ohlc():
         close = randrange(low, high+1)
         point[1] = [op, high, low, close]
         i+=1
-        print(point)
+        #print(point)
     cc.show(time_series)
 
 

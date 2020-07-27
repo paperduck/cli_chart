@@ -46,8 +46,8 @@ def show(ts_unsorted):
     # validation
     if len(ts_unsorted) < 1:
         print('empty time series')
-    elif len(ts_unsorted) < chart_width:
-        print('insufficient ticks ({}) for chart width of ({})'.format(len(ts_unsorted), chart_width))
+    #elif len(ts_unsorted) < chart_width:
+    #    print('insufficient ticks ({}) for chart width of ({})'.format(len(ts_unsorted), chart_width))
     # determine format of time series
     elif len( ts_unsorted[0][1] ) == 1:
         print ('SINGLE')
@@ -75,13 +75,11 @@ def show_single(ts_unsorted):
     assert start==ts[0][0], end==ts[len(ts)-1][0]
     # plot
     col_i           = 0   # current ascii chart column index
-    ts_i            = 0
     col_span        = (end-start)/chart_width
     chart           = []
     avg             = float(0)
     num_vals_in_avg = 0
     print()
-    #while ts_i < len(ts):
     for point in ts:
         # if cur date < next threshold
         if point[0] <= ts[0][0] + ((col_i+1) * col_span):
@@ -176,46 +174,45 @@ def show_ohlc(ts_unsorted):
         y_min = min( p[1][2], y_min ) # min low
     # plot
     col_i     = 0   # current ascii chart column index
-    ts_i      = 0
     col_span  = (end-start)/chart_width
     chart     = []
-    avg       = [float(0)]*4
-    num_vals_in_avg = 0
-    first_open = None # first within candle
+    first_open = None
     highest = None
     lowest = None
     for tick in ts:
-        print(tick[1])
-        # if cur date < next threshold
-        if tick[0] <= ts[0][0] + ((col_i+1) * col_span):
-            if not first_open:  first_open = tick[1][0]
-            if highest: highest = max(highest, tick[1][1])
-            else:       highest = tick[1][1]
-            if lowest:  lowest  = min(lowest, tick[1][2])
-            else:       lowest  = tick[1][2]
-        else:
-            final_close         = tick[1][3] # final within candle
-            # filled one ascii col; append to chart
-            candle = [chart_bg]*chart_height            
-            # calculate row index for each OHLC
-            if   first_open == y_min:   open_i = int(0); 
-            elif first_open == y_max:   open_i = int(chart_height - 1)
-            else:
-                open_i = float( (first_open - y_min) / (y_max - y_min) )  # percent: 0 to 100
-                open_i *= chart_height  # scale: 0 to chart_height
-                open_i = int(open_i)    # floor
-            if   highest == y_min:       high_i = int(0)
-            elif highest == y_max:       high_i = int(chart_height - 1)
-            else:
-                high_i  = float( (highest - y_min) / (y_max - y_min) )  # percent: 0 to 100
-                high_i  *= chart_height  # scale: 0 to chart_height
-                high_i  = int(high_i)    # floor
+        if not first_open:  first_open = tick[1][0]
+        if highest: highest = max(highest, tick[1][1])
+        else:       highest = tick[1][1]
+        if lowest:  lowest  = min(lowest, tick[1][2])
+        else:       lowest  = tick[1][2]
+        final_close         = tick[1][3] # final within candle
+        # compare cur date to next threshold
+        if tick[0] > ts[0][0] + ((col_i+1) * col_span):
+
+            # calculate row index for each of OHLC:
+            # open
+            if first_open: 
+                if   first_open == y_min:   open_i = int(0); 
+                elif first_open == y_max:   open_i = int(chart_height - 1)
+                else:
+                    open_i = float( (first_open - y_min) / (y_max - y_min) )  # percent: 0 to 100
+                    open_i *= chart_height  # scale: 0 to chart_height
+                    open_i = int(open_i)    # floor
+            # high
+                if   highest == y_min:       high_i = int(0)
+                elif highest == y_max:       high_i = int(chart_height - 1)
+                else:
+                    high_i  = float( (highest - y_min) / (y_max - y_min) )  # percent: 0 to 100
+                    high_i  *= chart_height  # scale: 0 to chart_height
+                    high_i  = int(high_i)    # floor
+            # low
             if   lowest == y_min:        low_i = int(0)
             elif lowest == y_max:        low_i = int(chart_height - 1)
             else:
                 low_i  = float( (lowest - y_min) / (y_max - y_min) )  # percent: 0 to 100
                 low_i  *= chart_height  # scale: 0 to chart_height
                 low_i  = int(low_i)    # floor
+            # close
             if   final_close == y_min:   close_i = int(0); 
             elif final_close == y_max:   close_i = int(chart_height - 1)
             else:
@@ -223,15 +220,11 @@ def show_ohlc(ts_unsorted):
                 close_i *= chart_height  # scale: 0 to chart_height
                 close_i = int(close_i)    # floor
             # draw candle
+            candle = [chart_bg]*chart_height            
             for row_i in range(low_i, high_i+1):
                 candle[row_i] = candle_bg
             candle[high_i]  = candle_high
             candle[low_i]   = candle_low
-
-            print('open/close: {:5d} --> {:5d}    row_i: {:5d} --> {:5d}'.format(
-                first_open, final_close, open_i, close_i))
-            #print(tick)
-
             if open_i == close_i:
                 candle[open_i] = candle_open_close
             else:
@@ -241,14 +234,14 @@ def show_ohlc(ts_unsorted):
             chart.append(candle)
             # increment + continue
             col_i     += 1
-            first_open = None
+            first_open = False
             highest = None
             lowest = None
 
     # y axis labels - one candle at the left
     y_labels            = [label_bg]*chart_height
-    y_labels[0]         = str(y_max) + label_bg
-    y_labels[chart_height-1] = str(y_min) + label_bg
+    y_labels[0] = str(y_min) + label_bg
+    y_labels[chart_height-1] = str(y_max) + label_bg
     y_labels_width      = max( len(y_labels[0]), len(y_labels[chart_height-1]) ) # get widest label
     y_labels_width      = min(y_labels_width, 10) # width threshold
     for z in range(0, chart_height): # justify labels
@@ -258,7 +251,7 @@ def show_ohlc(ts_unsorted):
     chart = [y_labels] + chart # append to left of chart
 
     # print main chart
-    for y in range(0, len(chart[0])):
+    for y in range( len(chart[0])-1, -1, -1 ):
         for x in range(0, len(chart)):
             print(chart[x][y], end='')
         print()
