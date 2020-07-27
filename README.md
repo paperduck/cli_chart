@@ -16,9 +16,9 @@ WARNING: You will need to make sure your terminal is able to display extended AS
 
 See `test.py` for usage examples. 
 
-There are two functions, `single()` and `ohlc()'.  
-single() takes a list of datetimes and values, the prints a simple line chart.  
-ohlc() is the same except for each datetime it takes four values (open high low close)  
+There are two functions, `single()` and `ohlc()`.
+`single()` takes a list of datetimes and values, the prints a simple line chart.  
+`ohlc()` is the same, except for each datetime it takes four values (open high low close)  
 and prints candlesticks.
 
 # Example output
